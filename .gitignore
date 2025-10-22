@@ -1,0 +1,13 @@
+# Ignorer l'environnement virtuel
+venv/
+
+# Fichiers Python inutiles
+__pycache__/
+*.pyc
+
+# Fichiers IA / bases vectorielles
+*.index
+uploads/
+
+# Variables d'environnement / secrets
+.env
