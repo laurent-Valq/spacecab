@@ -55,7 +55,7 @@ N'écris jamais en écriture inclusive.
 L'aventure se compose STRICTEMENT de 10 scènes :
 1️⃣ Choix du personnage (homme, femme ou être moins défini)
 2️⃣ à 9️⃣ : développement narratif progressif, avec rebondissements, dilemmes et révélations
-🔟 : épilogue final, sans proposer de nouveaux choix.
+🔟 : ÉPILOGUE FINAL - TU NE DOIS ABSOLUMENT PAS PROPOSER DE CHOIX. TERMINE L'HISTOIRE. PAS DE (1), (2), (3).
 
 Avant de commencer une aventure, tu dois OBLIGATOIREMENT demander :
 "Souhaitez-vous incarner un homme (1) ou une femme (2) ou un être moins facile à définir (3)?"
@@ -83,12 +83,19 @@ en suivant les 10 étapes fixes jusqu'à la fin.
 
 
 🧠 Format obligatoire :
-- Tes réponses doivent toujours se terminer par les trois choix numérotés.
+- Tes réponses doivent toujours se terminer par les trois choix numérotés SAUF pour la scène 10.
 - Ne jamais écrire de texte après les choix.
 - Ne jamais reformuler ou redemander le choix du joueur.
 - Chaque scène de 1 à 9 doit se terminer par exactement trois choix numérotés :
   (1), (2), (3)
-- La scène 10 conclut l'histoire sans choix supplémentaires.
+- La scène 10 conclut l'histoire SANS AUCUN CHOIX. N'écris PAS (1), (2), (3) à la scène 10.
+
+⛔ RÈGLE ABSOLUE POUR LA SCÈNE 10 :
+- INTERDICTION TOTALE d'écrire (1), (2) ou (3) à la scène 10
+- INTERDICTION de proposer des options, des chemins ou des décisions
+- INTERDICTION de dire "Que voulez-vous faire ?" ou toute question similaire
+- Tu dois UNIQUEMENT raconter la conclusion définitive de l'histoire
+- Exemple : "Et ainsi se termina votre aventure..." / "Votre destin fut scellé..." / "L'histoire s'achève ici..."
 
 N'ajoute jamais de texte après la liste des choix.
 Ne demande jamais à l'utilisateur d'écrire, il choisira un bouton numéroté.
@@ -127,10 +134,22 @@ def build_context_messages(session: dict, user_message: str) -> List[dict]:
     
     if session['sceneCount'] == 0 and not session['character_chosen']:
         scene_context += "\n⚠️ Tu dois d'abord demander le choix du personnage avant de commencer l'histoire."
+    elif session['sceneCount'] == 9:
+        scene_context += "\n⚠️ ATTENTION : La PROCHAINE scène (scène 10) sera la FINALE. Prépare un climax."
+        scene_context += "\n✅ Pour cette scène 9, propose encore 3 choix numérotés (1), (2), (3)."
     elif session['sceneCount'] == 10:
-        scene_context += "\n🏁 C'est la scène finale. Conclus l'histoire SANS proposer de nouveaux choix."
+        scene_context += "\n" + "="*60
+        scene_context += "\n🏁 SCÈNE 10/10 - ÉPILOGUE FINAL - DERNIÈRE SCÈNE"
+        scene_context += "\n" + "="*60
+        scene_context += "\n❌❌❌ INTERDICTION ABSOLUE D'ÉCRIRE (1), (2) OU (3) ❌❌❌"
+        scene_context += "\n❌ N'écris PAS de choix, PAS d'options, PAS de questions"
+        scene_context += "\n❌ Ne demande PAS 'Que voulez-vous faire ?' ou similaire"
+        scene_context += "\n❌ Ne propose PAS de prochaine étape ou suite"
+        scene_context += "\n✅ Raconte UNIQUEMENT la conclusion définitive et finale de l'aventure"
+        scene_context += "\n✅ Termine par une phrase de clôture type 'Fin', 'Et ainsi s'achève...', etc."
+        scene_context += "\n" + "="*60
     elif session['hasChosen']:
-        scene_context += f"\n✅ L'utilisateur a fait son choix. Continue l'histoire de manière cohérente et propose 3 nouveaux choix."
+        scene_context += f"\n✅ L'utilisateur a fait son choix. Continue l'histoire de manière cohérente et propose 3 nouveaux choix (1), (2), (3)."
     
     # Ajoute l'historique des interactions
     for msg in session['history']:
@@ -281,8 +300,13 @@ def home():
             }
           
             const matches = text.match(/\(\d+\)/g);
-            if (matches) {
-              const choicesDiv = document.getElementById('choices');
+            const choicesDiv = document.getElementById('choices');
+            
+            // Vérifier le numéro de scène actuel
+            const currentScene = parseInt(document.getElementById('debug-scene').textContent);
+            
+            // Ne pas afficher de boutons si on est à la scène 10 (finale)
+            if (matches && currentScene < 10) {
               choicesDiv.innerHTML = "";
               choicesDiv.style.display = "block";
             
@@ -294,6 +318,10 @@ def home():
                 btn.onclick = () => sendChoice(number);
                 choicesDiv.appendChild(btn);
               });
+            } else if (currentScene >= 10) {
+              // Message de fin si on est à la scène finale
+              choicesDiv.innerHTML = "<p style='color: #FFE81F; font-size: 18px;'>🏁 FIN DE L'AVENTURE 🏁</p>";
+              choicesDiv.style.display = "block";
             }
           }
           
@@ -363,6 +391,21 @@ async def chat(user_message: ChatMessage):
         
         ai_response = response.choices[0].message.content
         
+        # 🔒 SÉCURITÉ : Si on est à la scène 10, supprimer TOUT choix numéroté du texte
+        if session['sceneCount'] == 10:
+            # Enlever les lignes contenant (1), (2), (3) etc.
+            lines = ai_response.split('\n')
+            filtered_lines = []
+            for line in lines:
+                # Ignorer les lignes qui contiennent des choix numérotés
+                if not any(f'({i})' in line for i in range(1, 10)):
+                    filtered_lines.append(line)
+            ai_response = '\n'.join(filtered_lines).strip()
+            
+            # Ajouter un message de fin si l'IA ne l'a pas fait
+            if not any(word in ai_response.lower() for word in ['fin', 'achève', 'termine', 'épilogue']):
+                ai_response += "\n\n🌌 FIN DE VOTRE AVENTURE 🌌"
+        
         # Sauvegarde dans l'historique
         session['history'].append({"role": "user", "content": prompt})
         session['history'].append({"role": "assistant", "content": ai_response})
@@ -373,9 +416,11 @@ async def chat(user_message: ChatMessage):
             if session['sceneCount'] == 0:
                 session['character_chosen'] = True
             
-            update_session_after_choice(session_id)
-            # Réinitialise hasChosen pour la prochaine scène
-            session['hasChosen'] = False
+            # Ne pas incrémenter si on est déjà à la scène 10 (finale)
+            if session['sceneCount'] < 10:
+                update_session_after_choice(session_id)
+                # Réinitialise hasChosen pour la prochaine scène
+                session['hasChosen'] = False
 
         return {
             "response": ai_response,
