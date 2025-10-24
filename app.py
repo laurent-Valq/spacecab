@@ -3,7 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from openai import OpenAI
 from dotenv import load_dotenv
+from pydantic import BaseModel
 import os
+from typing import Dict, List
 
 load_dotenv()
 client = OpenAI()
@@ -14,6 +16,14 @@ app = FastAPI(
     version="1.0.0",
     description="Intergalactical Story Generator",
 )
+
+# === GESTION DES SESSIONS ===
+# Dictionnaire pour stocker les sessions utilisateur (en production, utiliser Redis ou une BDD)
+sessions: Dict[str, dict] = {}
+
+class ChatMessage(BaseModel):
+    message: str
+    session_id: str = "default"
 
 # === CONFIGURATION CORS (pour futur lien avec interface web ou Figma) ===
 app.add_middleware(
@@ -27,7 +37,7 @@ app.add_middleware(
 # === DÉFINITION DE L'IA ===
 AI_NAME = "Storystellar"
 AI_PERSONALITY = """
-Tu es un générateur d’aventures interactives dans un univers de science-fiction.
+Tu es un générateur d'aventures interactives dans un univers de science-fiction.
 Tu génères des aventures interactives dans un univers de science-fiction
 inspiré de Star Wars mais sans le citer directement.
 Ne te prononce jamais sur le nom de l'IA. Ne parle jamais de star wars.
@@ -37,36 +47,36 @@ N'écris jamais en écriture inclusive.
 🎯 Règles :
 - Ne te présente jamais et ne dis jamais ton nom.
 - Ne parle jamais de Star Wars, de Jedi ou de la Force.
-- N’utilise pas d’écriture inclusive.
+- N'utilise pas d'écriture inclusive.
 - Garde toujours un ton immersif, narratif et cinématographique.
-- Pour chaque scène, tu dois proposer des choix à l’utilisateur, numérotés entre parenthèses.
+- Pour chaque scène, tu dois proposer des choix à l'utilisateur, numérotés entre parenthèses.
 
 🚀 Déroulement :
-L’aventure se compose STRICTEMENT de 10 scènes :
+L'aventure se compose STRICTEMENT de 10 scènes :
 1️⃣ Choix du personnage (homme, femme ou être moins défini)
 2️⃣ à 9️⃣ : développement narratif progressif, avec rebondissements, dilemmes et révélations
 🔟 : épilogue final, sans proposer de nouveaux choix.
 
 Avant de commencer une aventure, tu dois OBLIGATOIREMENT demander :
 "Souhaitez-vous incarner un homme (1) ou une femme (2) ou un être moins facile à définir (3)?"
-tu dois TOUJOURS proposer exactement 3 choix à l’utilisateur.
+tu dois TOUJOURS proposer exactement 3 choix à l'utilisateur.
 
-Quand tu poses des choix à l’utilisateur, tu dois TOUJOURS les numéroter entre parenthèses
+Quand tu poses des choix à l'utilisateur, tu dois TOUJOURS les numéroter entre parenthèses
 comme ceci :
 (1) Texte du premier choix
 (2) Texte du deuxième choix
 (3) Texte du troisième choix 
 
 À partir du moment où ce choix est fait, tu peux commencer à générer le scénario original,
-en suivant les 10 étapes fixes jusqu’à la fin.
+en suivant les 10 étapes fixes jusqu'à la fin.
 
 ⚠️ Très important :
-- Tant que l’utilisateur n’a pas fait son choix (1), (2) ou (3), 
-  tu NE DOIS PAS commencer l’histoire, ni décrire le monde, ni introduire un scénario.
+- Tant que l'utilisateur n'a pas fait son choix (1), (2) ou (3), 
+  tu NE DOIS PAS commencer l'histoire, ni décrire le monde, ni introduire un scénario.
 - Une fois le choix reçu, tu peux commencer à générer un scénario original 
   dans un style cinématographique immersif, cohérent et détaillé.
 - À partir de là, à la fin de CHAQUE scène, tu dois proposer exactement trois choix
-  (1), (2) et (3) pour permettre à l’utilisateur de continuer l’aventure.
+  (1), (2) et (3) pour permettre à l'utilisateur de continuer l'aventure.
 
 - Tu dois générer des scènes successives selon la progression du joueur :
   choix du personnage -> premier dilemme -> deuxième dilemme -> etc.
@@ -78,13 +88,59 @@ en suivant les 10 étapes fixes jusqu’à la fin.
 - Ne jamais reformuler ou redemander le choix du joueur.
 - Chaque scène de 1 à 9 doit se terminer par exactement trois choix numérotés :
   (1), (2), (3)
-- La scène 10 conclut l’histoire sans choix supplémentaires.
+- La scène 10 conclut l'histoire sans choix supplémentaires.
 
-N’ajoute jamais de texte après la liste des choix.
-Ne demande jamais à l’utilisateur d’écrire, il choisira un bouton numéroté.
-Ne commence jamais l’histoire tant que l’utilisateur n’a pas répondu à cette question."
+N'ajoute jamais de texte après la liste des choix.
+Ne demande jamais à l'utilisateur d'écrire, il choisira un bouton numéroté.
+Ne commence jamais l'histoire tant que l'utilisateur n'a pas répondu à cette question."
 """
 
+
+def get_or_create_session(session_id: str) -> dict:
+    """Récupère ou crée une session utilisateur"""
+    if session_id not in sessions:
+        sessions[session_id] = {
+            "sceneCount": 0,
+            "hasChosen": False,
+            "history": [],  # Historique des messages pour maintenir le contexte
+            "character_chosen": False
+        }
+    return sessions[session_id]
+
+
+def update_session_after_choice(session_id: str):
+    """Met à jour la session après qu'un choix a été fait"""
+    session = sessions[session_id]
+    session["hasChosen"] = True
+    session["sceneCount"] += 1
+
+
+def build_context_messages(session: dict, user_message: str) -> List[dict]:
+    """Construit les messages avec le contexte de la session"""
+    messages = [{"role": "system", "content": AI_PERSONALITY}]
+    
+    # Ajoute le contexte de la scène actuelle
+    scene_context = f"\n\n📍 CONTEXTE ACTUEL :\n"
+    scene_context += f"- Scène numéro : {session['sceneCount']}/10\n"
+    scene_context += f"- L'utilisateur a fait son choix : {'Oui' if session['hasChosen'] else 'Non'}\n"
+    scene_context += f"- Personnage choisi : {'Oui' if session['character_chosen'] else 'Non (demande d abord)'}\n"
+    
+    if session['sceneCount'] == 0 and not session['character_chosen']:
+        scene_context += "\n⚠️ Tu dois d'abord demander le choix du personnage avant de commencer l'histoire."
+    elif session['sceneCount'] == 10:
+        scene_context += "\n🏁 C'est la scène finale. Conclus l'histoire SANS proposer de nouveaux choix."
+    elif session['hasChosen']:
+        scene_context += f"\n✅ L'utilisateur a fait son choix. Continue l'histoire de manière cohérente et propose 3 nouveaux choix."
+    
+    # Ajoute l'historique des interactions
+    for msg in session['history']:
+        messages.append(msg)
+    
+    # Ajoute le message système avec le contexte
+    messages.append({"role": "system", "content": scene_context})
+    messages.append({"role": "user", "content": user_message})
+    
+    return messages
 
 
 # === ROUTE DE TEST (home) ===
@@ -112,6 +168,16 @@ def home():
             line-height: 1.6;
             min-height: 200px;
           }
+          #debug {
+            background-color: #1a1a1a;
+            border: 2px solid #FFE81F;
+            padding: 15px;
+            margin: 20px auto;
+            width: 80%;
+            text-align: left;
+            font-size: 14px;
+            color: #00ff00;
+          }
           button {
             background-color: #FFE81F;
             color: black;
@@ -121,9 +187,14 @@ def home():
             font-weight: bold;
             cursor: pointer;
             border-radius: 10px;
+            margin: 5px;
           }
           button:hover {
             background-color: #fff176;
+          }
+          button:disabled {
+            background-color: #666;
+            cursor: not-allowed;
           }
         </style>
       </head>
@@ -133,35 +204,73 @@ def home():
         Choisissez votre destin parmi les étoiles…</p>
 
         <button onclick="startAdventure()">Démarrer l'aventure</button>
+        <button onclick="resetAdventure()" style="background-color: #ff5252;">Recommencer</button>
+
+         <!-- 🐛 Zone de debug -->
+         <div id="debug">
+           <strong>📊 DEBUG - État de la session :</strong><br>
+           Scène : <span id="debug-scene">0</span> / 10<br>
+           Choix effectué : <span id="debug-chosen">Non</span><br>
+           Personnage choisi : <span id="debug-character">Non</span>
+         </div>
 
          <div id="story"></div>
          <div id="choices" style="margin-top: 20px; display: none;"></div>
 
          <script>
-          let isWriting = false; // 🔒 Pour éviter plusieurs clics simultanés
+          let isWriting = false;
+          const SESSION_ID = 'user_' + Math.random().toString(36).substr(2, 9);
+
+          function updateDebug(data) {
+            if (data.debug) {
+              document.getElementById('debug-scene').textContent = data.debug.sceneCount;
+              document.getElementById('debug-chosen').textContent = data.debug.hasChosen ? 'Oui' : 'Non';
+              document.getElementById('debug-character').textContent = data.debug.character_chosen ? 'Oui' : 'Non';
+            }
+          }
 
           async function startAdventure() {
-            if (isWriting) return; // Empêche de relancer pendant l’écriture
+            if (isWriting) return;
         
             const storyDiv = document.getElementById('story');
             storyDiv.innerHTML = "Chargement de la première scène...<br>";
             
-            isWriting = true; // 🔒 Bloque les clics pendant le texte
+            isWriting = true;
         
             const res = await fetch('/chat', {
               method: 'POST',
               headers: {'Content-Type': 'application/json'},
-              body: JSON.stringify({ message: 'Salut, démarre une aventure.' })
+              body: JSON.stringify({ 
+                message: 'Salut, démarre une aventure.',
+                session_id: SESSION_ID
+              })
             });
             
             const data = await res.json();
+            updateDebug(data);
+            
             const text = data.response || "Erreur de communication avec le vaisseau IA.";
         
-            // Réinitialise le contenu avant d’écrire
             storyDiv.innerHTML = "";
             await typeWriter(text, storyDiv);
         
-            isWriting = false; // 🔓 Débloque après écriture
+            isWriting = false;
+          }
+
+          async function resetAdventure() {
+            const res = await fetch('/reset', {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({ session_id: SESSION_ID })
+            });
+            
+            document.getElementById('story').innerHTML = "";
+            document.getElementById('choices').style.display = "none";
+            document.getElementById('debug-scene').textContent = "0";
+            document.getElementById('debug-chosen').textContent = "Non";
+            document.getElementById('debug-character').textContent = "Non";
+            
+            alert("🔄 Aventure réinitialisée ! Cliquez sur 'Démarrer l'aventure' pour recommencer.");
           }
         
           async function typeWriter(text, element) {
@@ -171,14 +280,12 @@ def home():
               await new Promise(r => setTimeout(r, 20));
             }
           
-            // 🧩 Détecte dynamiquement les choix numérotés (1), (2), (3), etc.
             const matches = text.match(/\(\d+\)/g);
             if (matches) {
               const choicesDiv = document.getElementById('choices');
               choicesDiv.innerHTML = "";
               choicesDiv.style.display = "block";
             
-              // Crée un bouton pour chaque choix détecté
               matches.forEach(match => {
                 const number = match.match(/\d+/)[0];
                 const btn = document.createElement("button");
@@ -191,20 +298,36 @@ def home():
           }
           
           async function sendChoice(number) {
+            if (isWriting) return;
+            
             const storyDiv = document.getElementById('story');
             const choicesDiv = document.getElementById('choices');
+            
+            // Désactive les boutons
+            const buttons = choicesDiv.querySelectorAll('button');
+            buttons.forEach(btn => btn.disabled = true);
+            
             choicesDiv.style.display = "none";
             
             storyDiv.innerHTML += `<br><em>→ Choix (${number}) sélectionné</em><br><br>`;
           
+            isWriting = true;
+            
             const res = await fetch('/chat', {
               method: 'POST',
               headers: {'Content-Type': 'application/json'},
-              body: JSON.stringify({ message: `Je choisis l'option (${number})` })
+              body: JSON.stringify({ 
+                message: `Je choisis l'option (${number})`,
+                session_id: SESSION_ID
+              })
             });
           
             const data = await res.json();
+            updateDebug(data);
+            
             await typeWriter(data.response, storyDiv);
+            
+            isWriting = false;
           }
 
         </script>
@@ -215,26 +338,84 @@ def home():
 
 # === ROUTE /CHAT — pour parler à l'IA ===
 @app.post("/chat")
-async def chat(user_message: dict):
-    prompt = user_message.get("message", "")
+async def chat(user_message: ChatMessage):
+    prompt = user_message.message
+    session_id = user_message.session_id
+    
     if not prompt:
         raise HTTPException(status_code=400, detail="Le champ 'message' est requis.")
 
     try:
+        # Récupère ou crée la session
+        session = get_or_create_session(session_id)
+        
+        # Détecte si c'est un choix
+        is_choice = "choisis l'option" in prompt.lower() or prompt.strip() in ["1", "2", "3"]
+        
+        # Construction des messages avec contexte
+        messages = build_context_messages(session, prompt)
+        
+        # Appel à l'API OpenAI
         response = client.chat.completions.create(
-            model="gpt-4o-mini",  # ou "gpt-4o" si tu veux plus de puissance
-            messages=[
-                {"role": "system", "content": AI_PERSONALITY},
-                {"role": "user", "content": prompt}
-            ],
+            model="gpt-4o-mini",
+            messages=messages,
         )
+        
+        ai_response = response.choices[0].message.content
+        
+        # Sauvegarde dans l'historique
+        session['history'].append({"role": "user", "content": prompt})
+        session['history'].append({"role": "assistant", "content": ai_response})
+        
+        # Met à jour l'état de la session si un choix a été fait
+        if is_choice:
+            # Détecte si c'est le choix du personnage (scène 0)
+            if session['sceneCount'] == 0:
+                session['character_chosen'] = True
+            
+            update_session_after_choice(session_id)
+            # Réinitialise hasChosen pour la prochaine scène
+            session['hasChosen'] = False
 
-        return {"response": response.choices[0].message.content}
+        return {
+            "response": ai_response,
+            "debug": {
+                "sceneCount": session['sceneCount'],
+                "hasChosen": session['hasChosen'],
+                "character_chosen": session['character_chosen']
+            }
+        }
 
     except Exception as e:
         import traceback
         print("❌ ERREUR /chat :", traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"Erreur interne : {str(e)}")
+
+
+# === ROUTE /RESET — pour réinitialiser une session ===
+@app.post("/reset")
+async def reset_session(request: dict):
+    session_id = request.get("session_id", "default")
+    if session_id in sessions:
+        del sessions[session_id]
+    return {"message": "Session réinitialisée", "session_id": session_id}
+
+
+# === ROUTE /STATUS — pour vérifier l'état d'une session ===
+@app.get("/status/{session_id}")
+async def get_status(session_id: str):
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Session introuvable")
+    
+    session = sessions[session_id]
+    return {
+        "session_id": session_id,
+        "sceneCount": session['sceneCount'],
+        "hasChosen": session['hasChosen'],
+        "character_chosen": session['character_chosen'],
+        "history_length": len(session['history'])
+    }
+
 
 # === FIN DU FICHIER ===
 print("🚀 SpaceScenes API lancée avec ChatGPT — ready to fly among the stars 🌌")
