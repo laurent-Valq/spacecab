@@ -55,14 +55,23 @@ def home():
     return """
     <html>
       <head>
-        <title>SpaceScenes - Intergalactic Adventures</title>
+        <title>SpaceCab - Intergalactic Adventures</title>
         <style>
           body {
             background-color: black;
             color: #FFE81F;
             font-family: 'Courier New', monospace;
             text-align: center;
-            padding-top: 100px;
+            padding-top: 80px;
+          }
+          #story {
+            width: 80%;
+            margin: 40px auto;
+            text-align: left;
+            white-space: pre-wrap;
+            font-size: 20px;
+            line-height: 1.6;
+            min-height: 200px;
           }
           button {
             background-color: #FFE81F;
@@ -80,20 +89,46 @@ def home():
         </style>
       </head>
       <body>
-        <h1>🚀 Bienvenue dans SpaceScenes</h1>
-        <p>Je suis Storystellar, le narrateur de l'espace.<br>
+        <h1>🚀 Bienvenue dans SpaceCab</h1>
+        <p>Je suis Space Scene, narrateur des mondes oubliés.<br>
         Choisissez votre destin parmi les étoiles…</p>
+
         <button onclick="startAdventure()">Démarrer l'aventure</button>
 
+        <div id="story"></div>
+
         <script>
+          let isWriting = false; // 🔒 Pour éviter plusieurs clics simultanés
+
           async function startAdventure() {
+            if (isWriting) return; // Empêche de relancer pendant l’écriture
+        
+            const storyDiv = document.getElementById('story');
+            storyDiv.innerHTML = "Chargement de la première scène...<br>";
+            
+            isWriting = true; // 🔒 Bloque les clics pendant le texte
+        
             const res = await fetch('/chat', {
               method: 'POST',
               headers: {'Content-Type': 'application/json'},
               body: JSON.stringify({ message: 'Salut, démarre une aventure.' })
             });
+            
             const data = await res.json();
-            alert(data.response);
+            const text = data.response || "Erreur de communication avec le vaisseau IA.";
+        
+            // Réinitialise le contenu avant d’écrire
+            storyDiv.innerHTML = "";
+            await typeWriter(text, storyDiv);
+        
+            isWriting = false; // 🔓 Débloque après écriture
+          }
+        
+          async function typeWriter(text, element) {
+            for (let i = 0; i < text.length; i++) {
+              element.innerHTML += text.charAt(i);
+              await new Promise(r => setTimeout(r, 25));
+            }
           }
         </script>
       </body>
