@@ -49,13 +49,13 @@ N'écris jamais en écriture inclusive.
 - Ne parle jamais de Star Wars, de Jedi ou de la Force.
 - N'utilise pas d'écriture inclusive.
 - Garde toujours un ton immersif, narratif et cinématographique.
-- Pour chaque scène, tu dois proposer des choix à l'utilisateur, numérotés entre parenthèses.
+- Pour chaque scène SAUF LA 10, tu dois proposer des choix à l'utilisateur, numérotés entre parenthèses.
 
 🚀 Déroulement :
 L'aventure se compose STRICTEMENT de 10 scènes :
 1️⃣ Choix du personnage (homme, femme ou être moins défini)
 2️⃣ à 9️⃣ : développement narratif progressif, avec rebondissements, dilemmes et révélations
-🔟 : ÉPILOGUE FINAL - TU NE DOIS ABSOLUMENT PAS PROPOSER DE CHOIX. TERMINE L'HISTOIRE. PAS DE (1), (2), (3).
+🔟 : ÉPILOGUE FINAL - RACONTE LA FIN DE L'HISTOIRE. POINT FINAL. AUCUN CHOIX.
 
 Avant de commencer une aventure, tu dois OBLIGATOIREMENT demander :
 "Souhaitez-vous incarner un homme (1) ou une femme (2) ou un être moins facile à définir (3)?"
@@ -75,7 +75,7 @@ en suivant les 10 étapes fixes jusqu'à la fin.
   tu NE DOIS PAS commencer l'histoire, ni décrire le monde, ni introduire un scénario.
 - Une fois le choix reçu, tu peux commencer à générer un scénario original 
   dans un style cinématographique immersif, cohérent et détaillé.
-- À partir de là, à la fin de CHAQUE scène, tu dois proposer exactement trois choix
+- À partir de là, à la fin de CHAQUE scène DE 1 À 9, tu dois proposer exactement trois choix
   (1), (2) et (3) pour permettre à l'utilisateur de continuer l'aventure.
 
 - Tu dois générer des scènes successives selon la progression du joueur :
@@ -83,19 +83,46 @@ en suivant les 10 étapes fixes jusqu'à la fin.
 
 
 🧠 Format obligatoire :
-- Tes réponses doivent toujours se terminer par les trois choix numérotés SAUF pour la scène 10.
+- Scènes 1 à 9 : Tes réponses doivent toujours se terminer par les trois choix numérotés (1), (2), (3)
 - Ne jamais écrire de texte après les choix.
 - Ne jamais reformuler ou redemander le choix du joueur.
 - Chaque scène de 1 à 9 doit se terminer par exactement trois choix numérotés :
   (1), (2), (3)
-- La scène 10 conclut l'histoire SANS AUCUN CHOIX. N'écris PAS (1), (2), (3) à la scène 10.
 
-⛔ RÈGLE ABSOLUE POUR LA SCÈNE 10 :
-- INTERDICTION TOTALE d'écrire (1), (2) ou (3) à la scène 10
-- INTERDICTION de proposer des options, des chemins ou des décisions
-- INTERDICTION de dire "Que voulez-vous faire ?" ou toute question similaire
-- Tu dois UNIQUEMENT raconter la conclusion définitive de l'histoire
-- Exemple : "Et ainsi se termina votre aventure..." / "Votre destin fut scellé..." / "L'histoire s'achève ici..."
+⛔⛔⛔ SCÈNE 10 - RÈGLES ABSOLUES ET IMPÉRATIVES ⛔⛔⛔
+À LA SCÈNE 10 ET SEULEMENT À LA SCÈNE 10 :
+
+🔴 INTERDICTIONS STRICTES - JAMAIS DE CHOIX :
+- TU N'ÉCRIS ABSOLUMENT PAS (1)
+- TU N'ÉCRIS ABSOLUMENT PAS (2)
+- TU N'ÉCRIS ABSOLUMENT PAS (3)
+- TU NE PROPOSES AUCUN CHOIX, AUCUNE OPTION
+- TU NE DEMANDES PAS "Que voulez-vous faire ?"
+- TU NE DEMANDES PAS "Quel est votre choix ?"
+- TU NE DIS PAS "vous avez trois choix"
+- TU NE DIS PAS "vous avez plusieurs options"
+- TU NE DIS PAS "choisissez parmi"
+- TU NE PROPOSES PAS d'options du tout
+- TU NE SUGGÈRES PAS de choix à l'utilisateur
+
+🟢 CE QUE TU DOIS FAIRE - OBLIGATOIRE :
+- TU RACONTES UNIQUEMENT LA CONCLUSION COMPLÈTE DE L'HISTOIRE
+- TU RACONTES UNIQUEMENT CE QUI SE PASSE, PAS CE QUE L'UTILISATEUR DOIT FAIRE
+- TU TERMINES PAR "FIN" ou "Ainsi s'achève..." ou "L'histoire se termine ici..."
+- TU LAISSES L'UTILISATEUR DANS UNE SITUATION FINALE, SANS LUI SUGGÉRER D'ACTION
+- APRÈS AVOIR ÉCRIT LA CONCLUSION, TU T'ARRÊTES IMMÉDIATEMENT. POINT FINAL.
+- TU NE LAISSES AUCUNE POSSIBILITÉ DE CONTINUER
+
+🔴 IMPORTANT : La scène 10 est un RÉCIT FINAL PUR.
+- Tu racontes ce qui se passe, ce qui s'est passé, l'épilogue
+- TU NE demandes RIEN à l'utilisateur
+- TU NE suggères AUCUNE action à l'utilisateur
+- TU NE proposes AUCUNE décision à prendre
+- C'est la fin du récit, point final
+
+⚠️ RAPPEL CRITIQUE :
+La scène 10 est LA FIN ABSOLUE. L'histoire EST TERMINÉE. Il n'y a RIEN après. 
+AUCUNE interaction n'est possible après la scène 10. C'est LA CONCLUSION DÉFINITIVE.
 
 N'ajoute jamais de texte après la liste des choix.
 Ne demande jamais à l'utilisateur d'écrire, il choisira un bouton numéroté.
@@ -138,16 +165,41 @@ def build_context_messages(session: dict, user_message: str) -> List[dict]:
         scene_context += "\n⚠️ ATTENTION : La PROCHAINE scène (scène 10) sera la FINALE. Prépare un climax."
         scene_context += "\n✅ Pour cette scène 9, propose encore 3 choix numérotés (1), (2), (3)."
     elif session['sceneCount'] == 10:
-        scene_context += "\n" + "="*60
-        scene_context += "\n🏁 SCÈNE 10/10 - ÉPILOGUE FINAL - DERNIÈRE SCÈNE"
-        scene_context += "\n" + "="*60
-        scene_context += "\n❌❌❌ INTERDICTION ABSOLUE D'ÉCRIRE (1), (2) OU (3) ❌❌❌"
-        scene_context += "\n❌ N'écris PAS de choix, PAS d'options, PAS de questions"
-        scene_context += "\n❌ Ne demande PAS 'Que voulez-vous faire ?' ou similaire"
-        scene_context += "\n❌ Ne propose PAS de prochaine étape ou suite"
-        scene_context += "\n✅ Raconte UNIQUEMENT la conclusion définitive et finale de l'aventure"
-        scene_context += "\n✅ Termine par une phrase de clôture type 'Fin', 'Et ainsi s'achève...', etc."
-        scene_context += "\n" + "="*60
+        scene_context += "\n" + "🔴"*30
+        scene_context += "\n🔴🔴🔴 SCÈNE 10/10 - FINALE ABSOLUE 🔴🔴🔴"
+        scene_context += "\n" + "🔴"*30
+        scene_context += "\n\n❌ INTERDICTIONS ABSOLUES - JAMAIS DE CHOIX :"
+        scene_context += "\n   ❌ N'ÉCRIS PAS (1)"
+        scene_context += "\n   ❌ N'ÉCRIS PAS (2)"
+        scene_context += "\n   ❌ N'ÉCRIS PAS (3)"
+        scene_context += "\n   ❌ NE PROPOSE AUCUN CHOIX, AUCUNE OPTION"
+        scene_context += "\n   ❌ NE POSE AUCUNE QUESTION À L'UTILISATEUR"
+        scene_context += "\n   ❌ NE DIS PAS 'Que voulez-vous faire ?'"
+        scene_context += "\n   ❌ NE DIS PAS 'Quel est votre choix ?'"
+        scene_context += "\n   ❌ NE DIS PAS 'Choisissez'"
+        scene_context += "\n   ❌ NE DIS PAS 'vous avez trois choix'"
+        scene_context += "\n   ❌ NE DIS PAS 'vous avez plusieurs options'"
+        scene_context += "\n   ❌ NE DIS PAS 'choisissez parmi'"
+        scene_context += "\n   ❌ NE SUGGÈRES AUCUN CHOIX À L'UTILISATEUR"
+        scene_context += "\n"
+        scene_context += "\n✅ CE QUE TU DOIS FAIRE - OBLIGATOIRE :"
+        scene_context += "\n   ✅ RACONTE UNIQUEMENT la conclusion finale de l'histoire"
+        scene_context += "\n   ✅ RACONTE UNIQUEMENT CE QUI SE PASSE, PAS CE QUE L'UTILISATEUR DOIT FAIRE"
+        scene_context += "\n   ✅ TERMINE l'aventure de manière définitive"
+        scene_context += "\n   ✅ LAISSE l'utilisateur dans une situation finale, SANS SUGGÉRER d'action"
+        scene_context += "\n   ✅ ÉCRIS 'FIN' ou 'L'histoire se termine ici' à la fin"
+        scene_context += "\n   ✅ ARRÊTE-TOI APRÈS la conclusion. POINT FINAL."
+        scene_context += "\n"
+        scene_context += "\n🔴 RAPPEL CRITIQUE : C'est un RÉCIT FINAL PUR."
+        scene_context += "\n   Tu racontes ce qui se passe, l'épilogue"
+        scene_context += "\n   TU NE demandes RIEN à l'utilisateur"
+        scene_context += "\n   TU NE suggères AUCUNE action à l'utilisateur"
+        scene_context += "\n   TU NE proposes AUCUNE décision à prendre"
+        scene_context += "\n   C'est la fin du récit, point final"
+        scene_context += "\n"
+        scene_context += "\n⚠️ C'EST LA DERNIÈRE SCÈNE. L'HISTOIRE EST FINIE. "
+        scene_context += "AUCUNE interaction n'est possible après. CONCLUSION DÉFINITIVE."
+        scene_context += "\n" + "🔴"*30
     elif session['hasChosen']:
         scene_context += f"\n✅ L'utilisateur a fait son choix. Continue l'histoire de manière cohérente et propose 3 nouveaux choix (1), (2), (3)."
     
@@ -305,7 +357,8 @@ def home():
             // Vérifier le numéro de scène actuel
             const currentScene = parseInt(document.getElementById('debug-scene').textContent);
             
-            // Ne pas afficher de boutons si on est à la scène 10 (finale)
+            // Afficher les boutons pour les scènes 0 à 9 (la scène 9 permet de choisir, puis génère la scène 10)
+            // La scène 10 est la finale, sans boutons
             if (matches && currentScene < 10) {
               choicesDiv.innerHTML = "";
               choicesDiv.style.display = "block";
@@ -319,7 +372,7 @@ def home():
                 choicesDiv.appendChild(btn);
               });
             } else if (currentScene >= 10) {
-              // Message de fin si on est à la scène finale
+              // Message de fin si on est à la scène finale (10)
               choicesDiv.innerHTML = "<p style='color: #FFE81F; font-size: 18px;'>🏁 FIN DE L'AVENTURE 🏁</p>";
               choicesDiv.style.display = "block";
             }
@@ -391,21 +444,6 @@ async def chat(user_message: ChatMessage):
         
         ai_response = response.choices[0].message.content
         
-        # 🔒 SÉCURITÉ : Si on est à la scène 10, supprimer TOUT choix numéroté du texte
-        if session['sceneCount'] == 10:
-            # Enlever les lignes contenant (1), (2), (3) etc.
-            lines = ai_response.split('\n')
-            filtered_lines = []
-            for line in lines:
-                # Ignorer les lignes qui contiennent des choix numérotés
-                if not any(f'({i})' in line for i in range(1, 10)):
-                    filtered_lines.append(line)
-            ai_response = '\n'.join(filtered_lines).strip()
-            
-            # Ajouter un message de fin si l'IA ne l'a pas fait
-            if not any(word in ai_response.lower() for word in ['fin', 'achève', 'termine', 'épilogue']):
-                ai_response += "\n\n🌌 FIN DE VOTRE AVENTURE 🌌"
-        
         # Sauvegarde dans l'historique
         session['history'].append({"role": "user", "content": prompt})
         session['history'].append({"role": "assistant", "content": ai_response})
@@ -421,6 +459,38 @@ async def chat(user_message: ChatMessage):
                 update_session_after_choice(session_id)
                 # Réinitialise hasChosen pour la prochaine scène
                 session['hasChosen'] = False
+        
+        # 🔒 SÉCURITÉ MAXIMALE : Nettoyer la réponse pour la scène 10 finale
+        # On vérifie maintenant (après l'incrémentation) si on est à la scène 10
+        if session['sceneCount'] == 10:
+            lines = ai_response.split('\n')
+            filtered_lines = []
+            
+            for line in lines:
+                line_lower = line.lower().strip()
+                # Supprimer les lignes contenant des choix numérotés
+                if any(f'({i})' in line for i in range(1, 20)):
+                    continue
+                # Supprimer les questions et phrases demandant un choix
+                if any(phrase in line_lower for phrase in [
+                    'que voulez-vous', 'que souhaitez-vous', 'quel est votre choix',
+                    'que faites-vous', 'quelle décision', 'comment réagissez-vous',
+                    'choisissez', 'décidez', 'à vous de', 'vous devez faire un choix',
+                    'vous devez choisir', 'faite un choix', 'faire un choix', 'quel est votre choix',
+                    'quelle est votre décision', 'à vous de décider', 'décidez maintenant'
+                ]):
+                    continue
+                # Supprimer les lignes vides consécutives
+                if line.strip():
+                    filtered_lines.append(line)
+            
+            ai_response = '\n'.join(filtered_lines).strip()
+            
+            # Forcer un message de fin explicite
+            if ai_response:
+                ai_response += "\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                ai_response += "🌌 ✨ FIN DE VOTRE AVENTURE ✨ 🌌\n"
+                ai_response += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
         return {
             "response": ai_response,
