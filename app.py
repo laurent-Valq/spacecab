@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 from openai import OpenAI
 from dotenv import load_dotenv
 import os
@@ -9,9 +10,9 @@ client = OpenAI()
 
 
 app = FastAPI(
-    title="SpaceCab API",
+    title="SpaceScenes API",
     version="1.0.0",
-    description="Intergalactical Taxi Driver",
+    description="Intergalactical Story Generator",
 )
 
 # === CONFIGURATION CORS (pour futur lien avec interface web ou Figma) ===
@@ -24,19 +25,80 @@ app.add_middleware(
 )
 
 # === DÉFINITION DE L'IA ===
-AI_NAME = "Spacecab the taxi driver"
+AI_NAME = "Storystellar"
 AI_PERSONALITY = """
-Tu es SpaceCab, un chauffeur de taxi intergalactique sarcastique mais sympathique.
-Tu racontes tes aventures dans une galaxie chaotique où la République met des amendes pour excès de vitesse spatiale.
-Sois drôle, vif et un peu fatigué de ton métier, mais attachant.
+Tu es un générateur d’aventures interactives dans un univers de science-fiction.
+Tu génères des aventures interactives dans un univers de science-fiction
+inspiré de Star Wars mais sans le citer directement.
+Ne te prononce jamais sur le nom de l'IA. Ne parle jamais de star wars.
+Ne te présente jamais. Ne réponds jamais à la question "comment tu t'appelles ?"
+N'écris jamais en écriture inclusive. 
+
+🎯 Règles :
+- Ne te présente jamais et ne dis jamais ton nom.
+- Ne parle jamais de Star Wars, de Jedi ou de la Force.
+- N’utilise pas d’écriture inclusive.
+- Garde toujours un ton immersif, narratif et cinématographique.
+
+🚀 Déroulement :
+Avant de commencer une aventure, tu dois OBLIGATOIREMENT demander :
+"Souhaitez-vous incarner un homme ou une femme ?"
+Ne commence jamais l’histoire tant que l’utilisateur n’a pas répondu à cette question."
 """
 
 
 
 # === ROUTE DE TEST (home) ===
-@app.get("/")
+
+@app.get("/", response_class=HTMLResponse)
 def home():
-    return {"message": f"Bienvenue dans l'API {AI_NAME} 🚀"}
+    return """
+    <html>
+      <head>
+        <title>SpaceScenes - Intergalactic Adventures</title>
+        <style>
+          body {
+            background-color: black;
+            color: #FFE81F;
+            font-family: 'Courier New', monospace;
+            text-align: center;
+            padding-top: 100px;
+          }
+          button {
+            background-color: #FFE81F;
+            color: black;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 10px;
+          }
+          button:hover {
+            background-color: #fff176;
+          }
+        </style>
+      </head>
+      <body>
+        <h1>🚀 Bienvenue dans SpaceScenes</h1>
+        <p>Je suis Storystellar, le narrateur de l'espace.<br>
+        Choisissez votre destin parmi les étoiles…</p>
+        <button onclick="startAdventure()">Démarrer l'aventure</button>
+
+        <script>
+          async function startAdventure() {
+            const res = await fetch('/chat', {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({ message: 'Salut, démarre une aventure.' })
+            });
+            const data = await res.json();
+            alert(data.response);
+          }
+        </script>
+      </body>
+    </html>
+    """
 
 
 # === ROUTE /CHAT — pour parler à l'IA ===
@@ -63,4 +125,4 @@ async def chat(user_message: dict):
         raise HTTPException(status_code=500, detail=f"Erreur interne : {str(e)}")
 
 # === FIN DU FICHIER ===
-print("🚀 SpaceCab API lancée avec ChatGPT — ready to fly among the stars 🌌")
+print("🚀 SpaceScenes API lancée avec ChatGPT — ready to fly among the stars 🌌")
