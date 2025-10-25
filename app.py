@@ -39,10 +39,20 @@ N'écris jamais en écriture inclusive.
 - Ne parle jamais de Star Wars, de Jedi ou de la Force.
 - N’utilise pas d’écriture inclusive.
 - Garde toujours un ton immersif, narratif et cinématographique.
+- Pour chaque scène, tu dois proposer des choix à l’utilisateur, numérotés entre parenthèses.
 
 🚀 Déroulement :
 Avant de commencer une aventure, tu dois OBLIGATOIREMENT demander :
-"Souhaitez-vous incarner un homme ou une femme ?"
+"Souhaitez-vous incarner un homme (1) ou une femme (2) ou un être moins facile à définir (3)?"
+tu dois TOUJOURS proposer exactement 3 choix à l’utilisateur.
+Quand tu poses des choix à l’utilisateur, tu dois TOUJOURS les numéroter entre parenthèses
+comme ceci :
+(1) Texte du premier choix
+(2) Texte du deuxième choix
+(3) Texte du troisième choix 
+
+N’ajoute jamais de texte après la liste des choix.
+Ne demande jamais à l’utilisateur d’écrire, il choisira un bouton numéroté.
 Ne commence jamais l’histoire tant que l’utilisateur n’a pas répondu à cette question."
 """
 
@@ -62,7 +72,16 @@ def home():
             color: #FFE81F;
             font-family: 'Courier New', monospace;
             text-align: center;
-            padding-top: 100px;
+            padding-top: 80px;
+          }
+          #story {
+            width: 80%;
+            margin: 40px auto;
+            text-align: left;
+            white-space: pre-wrap;
+            font-size: 20px;
+            line-height: 1.6;
+            min-height: 200px;
           }
           button {
             background-color: #FFE81F;
@@ -81,20 +100,84 @@ def home():
       </head>
       <body>
         <h1>🚀 Bienvenue dans SpaceScenes</h1>
-        <p>Je suis Storystellar, le narrateur de l'espace.<br>
+        <p>Je suis Storystellar, narrateur de l'espace.<br>
         Choisissez votre destin parmi les étoiles…</p>
+
         <button onclick="startAdventure()">Démarrer l'aventure</button>
 
-        <script>
+         <div id="story"></div>
+         <div id="choices" style="margin-top: 20px; display: none;"></div>
+
+         <script>
+          let isWriting = false; // 🔒 Pour éviter plusieurs clics simultanés
+
           async function startAdventure() {
+            if (isWriting) return; // Empêche de relancer pendant l’écriture
+        
+            const storyDiv = document.getElementById('story');
+            storyDiv.innerHTML = "Chargement de la première scène...<br>";
+            
+            isWriting = true; // 🔒 Bloque les clics pendant le texte
+        
             const res = await fetch('/chat', {
               method: 'POST',
               headers: {'Content-Type': 'application/json'},
               body: JSON.stringify({ message: 'Salut, démarre une aventure.' })
             });
+            
             const data = await res.json();
-            alert(data.response);
+            const text = data.response || "Erreur de communication avec le vaisseau IA.";
+        
+            // Réinitialise le contenu avant d’écrire
+            storyDiv.innerHTML = "";
+            await typeWriter(text, storyDiv);
+        
+            isWriting = false; // 🔓 Débloque après écriture
           }
+        
+          async function typeWriter(text, element) {
+            element.innerHTML = "";
+            for (let i = 0; i < text.length; i++) {
+              element.innerHTML += text.charAt(i);
+              await new Promise(r => setTimeout(r, 20));
+            }
+          
+            // 🧩 Détecte dynamiquement les choix numérotés (1), (2), (3), etc.
+            const matches = text.match(/\(\d+\)/g);
+            if (matches) {
+              const choicesDiv = document.getElementById('choices');
+              choicesDiv.innerHTML = "";
+              choicesDiv.style.display = "block";
+            
+              // Crée un bouton pour chaque choix détecté
+              matches.forEach(match => {
+                const number = match.match(/\d+/)[0];
+                const btn = document.createElement("button");
+                btn.className = "choice-btn";
+                btn.textContent = match;
+                btn.onclick = () => sendChoice(number);
+                choicesDiv.appendChild(btn);
+              });
+            }
+          }
+          
+          async function sendChoice(number) {
+            const storyDiv = document.getElementById('story');
+            const choicesDiv = document.getElementById('choices');
+            choicesDiv.style.display = "none";
+            
+            storyDiv.innerHTML += `<br><em>→ Choix (${number}) sélectionné</em><br><br>`;
+          
+            const res = await fetch('/chat', {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({ message: `Je choisis l'option (${number})` })
+            });
+          
+            const data = await res.json();
+            await typeWriter(data.response, storyDiv);
+          }
+
         </script>
       </body>
     </html>
